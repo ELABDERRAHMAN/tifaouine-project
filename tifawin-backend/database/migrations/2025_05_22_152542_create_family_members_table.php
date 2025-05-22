@@ -13,14 +13,14 @@ return new class extends Migration
      */
    public function up()
 {
-    Schema::create('users', function (Blueprint $table) {
+    Schema::create('family_members', function (Blueprint $table) {
         $table->id();
+        $table->foreignId('orphan_file_id')->constrained()->onDelete('cascade'); // علاقة مع اليتيم
         $table->string('name');
-        $table->string('email')->unique();
-        $table->timestamp('email_verified_at')->nullable();
-        $table->string('password');
-        $table->string('role')->default('employe'); // ✅ تمت إضافته هنا
-        $table->rememberToken();
+        $table->string('relation'); // علاقة القرابة: أب، أم، أخ...
+        $table->string('job')->nullable();
+        $table->string('cin')->nullable();
+        $table->integer('age')->nullable();
         $table->timestamps();
     });
 }
@@ -33,6 +33,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('users');
+        Schema::dropIfExists('family_members');
     }
 };
