@@ -1,0 +1,94 @@
+{
+  "name": "orphan-management-premium-design",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "نظام إدارة كفالة الأيتام - تطبيق متطور لإدارة ورعاية الأيتام",
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT",
+  "keywords": [
+    "orphan-management",
+    "react",
+    "vite",
+    "tailwindcss",
+    "laravel-api"
+  ],
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "lint:fix": "eslint . --ext js,jsx --fix",
+    "format": "prettier --write \"src/**/*.{js,jsx,css,md}\"",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist node_modules/.vite",
+    "analyze": "npm run build && npx vite-bundle-analyzer dist/stats.html"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.20.1",
+    "framer-motion": "^10.16.16",
+    "lucide-react": "^0.294.0",
+    "axios": "^1.6.2",
+    "react-hook-form": "^7.48.2",
+    "react-hot-toast": "^2.4.1",
+    "date-fns": "^2.30.0",
+    "clsx": "^2.0.0",
+    "react-query": "^3.39.3",
+    "react-table": "^7.8.0",
+    "react-select": "^5.8.0",
+    "react-datepicker": "^4.25.0",
+    "react-dropzone": "^14.2.3",
+    "js-file-download": "^0.4.12",
+    "chart.js": "^4.4.0",
+    "react-chartjs-2": "^5.2.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^2.5.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.1.1",
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.3.6",
+    "tailwindcss-animate": "^1.0.7",
+    "vite": "^5.0.8",
+    "vite-plugin-pwa": "^0.17.4",
+    "eslint": "^8.55.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "prettier": "^3.1.1",
+    "prettier-plugin-tailwindcss": "^0.5.7",
+    "@tailwindcss/forms": "^0.5.7",
+    "@tailwindcss/typography": "^0.5.10",
+    "@tailwindcss/aspect-ratio": "^0.4.2",
+    "vite-bundle-analyzer": "^0.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/orphan-management-system.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/orphan-management-system/issues"
+  },
+  "homepage": "https://github.com/yourusername/orphan-management-system#readme"
+}

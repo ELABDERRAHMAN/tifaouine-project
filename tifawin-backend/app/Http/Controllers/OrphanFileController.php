@@ -2,102 +2,151 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\OrphanFile;
 use Illuminate\Http\Request;
+use App\Models\OrphanFile;
 
-class OrphanFileController extends Controller
+class OrphanController extends Controller
 {
-    public function uploadFile(Request $request, $id)
-{
-    $orphan = OrphanFile::findOrFail($id);
-
-    $request->validate([
-        'file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
-    ]);
-
-    $path = $request->file('file')->store('orphans', 'public');
-
-    $orphan->update([
-        'file_path' => $path,
-    ]);
-
-    return response()->json([
-        'message' => 'File uploaded successfully',
-        'file_url' => asset('storage/' . $path)
-    ]);
-}
-
-    // 🟢 GET /api/orphan-files
-    public function index()
+    /**
+     * عرض قائمة الأيتام
+     */
+    public function index(Request $request)
     {
-        return response()->json(OrphanFile::all(), 200);
+        try {
+            $perPage = $request->get('per_page', 15);
+            $search = $request->get('search');
+
+            $query = OrphanFile::query();
+
+            if ($search) {
+                $query->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%");
+            }
+
+            $orphans = $query->latest()->paginate($perPage);
+
+            return response()->json([
+                'success' => true,
+                'data' => $orphans
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'فشل في جلب قائمة الأيتام',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
-    // 🟢 POST /api/orphan-files
+    /**
+     * إنشاء يتيم جديد
+     */
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'first_name' => 'required|string',
-            'last_name' => 'required|string',
-            'birth_date' => 'nullable|date',
-            'gender' => 'required|string|in:male,female',
-            'cin' => 'nullable|string',
-            'photo_path' => 'nullable|string',
-            'notes' => 'nullable|string',
-        ]);
+        try {
+            $validatedData = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:orphan_files,email',
+                'phone' => 'nullable|string|max:20',
+                'address' => 'nullable|string',
+                'birth_date' => 'nullable|date',
+                'notes' => 'nullable|string',
+            ]);
 
-        $orphan = OrphanFile::create($data);
+            $orphan = OrphanFile::create($validatedData);
 
-        return response()->json($orphan, 201);
+            return response()->json([
+                'success' => true,
+                'data' => $orphan,
+                'message' => 'تم إنشاء ملف اليتيم بنجاح'
+            ], 201);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'فشل في إنشاء ملف اليتيم',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
-    // 🟢 GET /api/orphan-files/{id}
+    /**
+     * عرض يتيم محدد
+     */
     public function show($id)
     {
-        $orphan = OrphanFile::find($id);
+        try {
+            $orphan = OrphanFile::findOrFail($id);
 
-        if (!$orphan) {
-            return response()->json(['message' => 'Not found'], 404);
+            return response()->json([
+                'success' => true,
+                'data' => $orphan
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'لم يتم العثور على اليتيم',
+                'error' => $e->getMessage()
+            ], 404);
         }
-
-        return response()->json($orphan, 200);
     }
 
-    // 🟢 PUT /api/orphan-files/{id}
+    /**
+     * تحديث يتيم
+     */
     public function update(Request $request, $id)
     {
-        $orphan = OrphanFile::find($id);
+        try {
+            $orphan = OrphanFile::findOrFail($id);
 
-        if (!$orphan) {
-            return response()->json(['message' => 'Not found'], 404);
+            $validatedData = $request->validate([
+                'name' => 'sometimes|required|string|max:255',
+                'email' => 'sometimes|required|email|unique:orphan_files,email,' . $id,
+                'phone' => 'nullable|string|max:20',
+                'address' => 'nullable|string',
+                'birth_date' => 'nullable|date',
+                'notes' => 'nullable|string',
+            ]);
+
+            $orphan->update($validatedData);
+
+            return response()->json([
+                'success' => true,
+                'data' => $orphan,
+                'message' => 'تم تحديث ملف اليتيم بنجاح'
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'فشل في تحديث ملف اليتيم',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $data = $request->validate([
-            'first_name' => 'sometimes|required|string',
-            'last_name' => 'sometimes|required|string',
-            'birth_date' => 'nullable|date',
-            'gender' => 'sometimes|required|string|in:male,female',
-            'cin' => 'nullable|string',
-            'photo_path' => 'nullable|string',
-            'notes' => 'nullable|string',
-        ]);
-
-        $orphan->update($data);
-
-        return response()->json($orphan, 200);
     }
 
-    // 🟢 DELETE /api/orphan-files/{id}
+    /**
+     * حذف يتيم
+     */
     public function destroy($id)
     {
-        $orphan = OrphanFile::find($id);
+        try {
+            $orphan = OrphanFile::findOrFail($id);
+            $orphan->delete();
 
-        if (!$orphan) {
-            return response()->json(['message' => 'Not found'], 404);
+            return response()->json([
+                'success' => true,
+                'message' => 'تم حذف ملف اليتيم بنجاح'
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'فشل في حذف ملف اليتيم',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $orphan->delete();
-
-        return response()->json(['message' => 'Deleted successfully'], 200);
     }
 }

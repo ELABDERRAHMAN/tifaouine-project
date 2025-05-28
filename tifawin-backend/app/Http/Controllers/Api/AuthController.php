@@ -5,78 +5,150 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    
     // 🔹 تسجيل مستخدم جديد
     public function register(Request $request)
     {
-        $data = $request->validate([
-            'name' => 'required|string',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|min:6',
-            'role' => 'in:admin,employe',
-        ]);
+        try {
+            $data = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users,email',
+                'password' => 'required|string|min:6|confirmed',
+                'role' => 'nullable|in:admin,employe',
+            ]);
 
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'role' => $data['role'] ?? 'employe',
-            'password' => Hash::make($data['password']),
-        ]);
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'role' => $data['role'] ?? 'employe',
+                'password' => Hash::make($data['password']),
+            ]);
 
-        $token = $user->createToken('api_token')->plainTextToken;
+            $token = $user->createToken('auth_token')->plainTextToken;
 
-        return response()->json(['user' => $user, 'token' => $token], 201);
+            return response()->json([
+                'success' => true,
+                'message' => 'تم إنشاء الحساب بنجاح',
+                'user' => $user,
+                'token' => $token,
+            ], 201);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'خطأ في البيانات المدخلة',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'حدث خطأ غير متوقع',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     // 🔹 تسجيل الدخول
     public function login(Request $request)
     {
-        $data = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
+        try {
+            $credentials = $request->validate([
+                'email' => 'required|email',
+                'password' => 'required|string',
+            ]);
 
-        $user = User::where('email', $data['email'])->first();
+            if (!Auth::attempt($credentials)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'البريد الإلكتروني أو كلمة المرور غير صحيحة'
+                ], 401);
+            }
 
-        if (!$user || !Hash::check($data['password'], $user->password)) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
+            $user = Auth::user();
+            
+            // حذف التوكنات القديمة (اختياري)
+            $user->tokens()->delete();
+            
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'تم تسجيل الدخول بنجاح',
+                'token' => $token,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'created_at' => $user->created_at,
+                ],
+            ], 200);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'خطأ في البيانات المدخلة',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'حدث خطأ في الخادم',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        $token = $user->createToken('api_token')->plainTextToken;
-
-        return response()->json(['user' => $user, 'token' => $token], 200);
     }
 
     // 🔹 تسجيل الخروج
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        try {
+            // حذف التوكن الحالي فقط
+            $request->user()->currentAccessToken()->delete();
 
-        return response()->json(['message' => 'Logged out'], 200);
+            return response()->json([
+                'success' => true,
+                'message' => 'تم تسجيل الخروج بنجاح',
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'حدث خطأ أثناء تسجيل الخروج',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
-    // 🔺 POST /api/orphan-files/{id}/upload
-public function uploadFile(Request $request, $id)
-{
-    $orphan = OrphanFile::findOrFail($id);
 
-    $request->validate([
-        'file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
-    ]);
+    // 🔹 عرض معلومات المستخدم
+    public function profile(Request $request)
+    {
+        try {
+            $user = $request->user();
 
-    $path = $request->file('file')->store('orphans', 'public');
+            return response()->json([
+                'success' => true,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'created_at' => $user->created_at,
+                    'updated_at' => $user->updated_at,
+                ],
+            ], 200);
 
-    $orphan->update([
-        'file_path' => $path,
-    ]);
-
-    return response()->json([
-        'message' => 'File uploaded successfully',
-        'file_url' => asset('storage/' . $path)
-    ]);
-}
-
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'حدث خطأ في جلب بيانات المستخدم',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }
